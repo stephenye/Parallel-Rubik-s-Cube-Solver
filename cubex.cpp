@@ -11,6 +11,8 @@
 #include <cstdio>
 #include <string>
 #include <cstdlib>
+#include <sys/time.h>
+#include <sys/types.h>
 using namespace std;
 #include "cubex.h"
 
@@ -1715,7 +1717,16 @@ const int Cubex::SolveCube()
   cubeinit = true;
   // cube seems to have ok cubelets, so try to solve it...
   for (int i = 1; i <= MOV; i++) mvs[i] = 0;
-  // try to solve the cube from each possible starting orientation (to find the fastest solution)...
+  int num_moves = 0;
+  /*
+  struct timeval tp;
+  double sec, usec, start, end;
+  gettimeofday(&tp, NULL);
+  sec = static_cast<double>(tp.tv_sec);
+  usec = static_cast<double>(tp.tv_usec) / 1E6;
+  start = sec + usec;
+  */
+  // try to solve the cube from each possible starting orientation (to find the fastest solution)...	
   for (int q = 1; q <= 24; q++) {
     // buffer old cube
     for (int i = -2; i <= 2; i++) {
@@ -1814,7 +1825,17 @@ const int Cubex::SolveCube()
       XCD(); XCD(); XCR();
     }
     printf("The moves for orientation %d is %d.\n", q, n);
+    num_moves = num_moves + n;
   }
+  printf("Total moves for 24 orientations is %d.\n", num_moves);
+  /*
+  gettimeofday(&tp, NULL);
+  sec = static_cast<double>(tp.tv_sec);
+  usec = static_cast<double>(tp.tv_usec) / 1E6;
+  end = sec + usec;
+  double time = end - start;
+  printf("The elapsed clock cycles are: %f.\n", time);
+  */
   // set mov array...
   for (int i = 1; i <= MOV; i++) {
     mov[i] = mvs[i];
