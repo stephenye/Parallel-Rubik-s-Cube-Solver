@@ -1,3 +1,8 @@
+
+
+#ifndef _CUBEORIENTATION_H_
+#define _CUBEORIENTATION_H_
+
 #include <string>
 using namespace std;
 
@@ -7,6 +12,7 @@ class CubeOrientation
 public:
   CubeOrientation();
   const static int N = 3; // <-- size of the cube (NxNxN)
+  const static int MOV = 8;
   const bool IsSolved();
   const bool XML(int a, bool n);
   const bool XMR(int a, bool n);
@@ -47,13 +53,26 @@ public:
   const int FindCent(int a);
   const int FindEdge(int a, int b);
   const int FindCorn(int a, int b, int c);
+  const void Ctemp();
   const string Concise(string a);
   const string Efficient(string a);
   int Cub[N+2][N+2][N+2];
+  bool shorten;
+  bool cubeinit;
+  int cenfix;
+  int erval;
+  int numOrientation;
+  string solution;
+  string p;
+  int numMoves;
+  int fx;
+  int fy;
+  int fz;
+  int mov[MOV+1];
   void InitOrientation(int inputCube[N+2][N+2][N+2], int q);
+  void Solve();
 protected:
 private:
-  const void Ctemp();
   const string TopEdges();
   const string TopCorners();
   const string MiddleEdges();
@@ -64,3 +83,5 @@ private:
   const string CentersRotate();
   int Tmp[N+2][N+2][N+2];
 };
+
+#endif

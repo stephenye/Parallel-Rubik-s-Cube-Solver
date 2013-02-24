@@ -6,10 +6,18 @@ using namespace std;
 
 // CubeOrientation constructor
 CubeOrientation::CubeOrientation(){
+  shorten = true;
+  cenfix = 0;
+  erval = 0;
+  cubeinit = false;
+  numOrientation = 0;
+  solution = "";
+  numMoves = 0;
+  p = "";
 }
 // Initialization
-CubeOrientation::InitOrientation(int inputCube[n+5][n+5][n+5], int q) {
-  String p = "";
+void CubeOrientation::InitOrientation(int inputCube[N+2][N+2][N+2], int q) {
+  numOrientation = q;
   // Generate new orientation
   for (int i = -2; i <= 2; i++) {
     for (int j = -2; j <= 2; j++) {
@@ -33,6 +41,14 @@ CubeOrientation::InitOrientation(int inputCube[n+5][n+5][n+5], int q) {
       XCD(); XCD(); XCR();
     }
   }
+  for (int i = -2; i <= 2; i++) {
+    for (int j = -2; j <= 2; j++) {
+      for (int k = -2; k <= 2; k++) {
+	printf("%d", Cub[i+2][j+2][k+2]);
+      }
+    }
+  }
+  printf("\n");
 }
 // return true if cube is solved
 const bool CubeOrientation::IsSolved()
@@ -481,6 +497,18 @@ const int CubeOrientation::FindCorn(int a, int b, int c)
     }
   }
   return f;
+}
+// this is the series of cube rotation functions
+// copy cube model so we can change it and remember the original
+const void CubeOrientation::Ctemp()
+{
+  for (int i = 0; i <= N+1; i++) {
+    for (int j = 0; j <= N+1; j++) {
+      for (int k = 0; k <= N+1; k++) {
+        Tmp[i][j][k] = Cub[i][j][k];
+      }
+    }
+  }
 }
 // routine for condensing redundant redundancies (a joke)
 // this is undoubtedly the most complex routine in this class
@@ -1443,4 +1471,62 @@ const string CubeOrientation::CentersRotate()
   if (shorten) s = Concise(s);
   mov[8] = s.length() / 3;
   return s;
+}
+void CubeOrientation::Solve()
+{
+    int Fac[7][2];
+    string t = "";
+    // interpolate so that centers are in order...
+    Fac[0][0] = 0;
+    Fac[1][0] = Cub[0+2][2+2][0+2]; Fac[2][0] = Cub[0+2][0+2][-2+2];
+    Fac[3][0] = Cub[-2+2][0+2][0+2]; Fac[4][0] = Cub[0+2][0+2][2+2];
+    Fac[5][0] = Cub[2+2][0+2][0+2]; Fac[6][0] = Cub[0+2][-2+2][0+2];
+    for (int i = 0; i <= 6; i++) {
+      Fac[Fac[i][0]][1] = i;
+    }
+    // apply interpolation
+    for (int i = -1; i <= 1; i++) {
+      for (int j = -1; j <= 1; j++) {
+        Cub[i+2][2+2][j+2] = Fac[Cub[i+2][2+2][j+2]][1];
+        Cub[i+2][j+2][-2+2] = Fac[Cub[i+2][j+2][-2+2]][1];
+        Cub[-2+2][i+2][j+2] = Fac[Cub[-2+2][i+2][j+2]][1];
+        Cub[i+2][j+2][2+2] = Fac[Cub[i+2][j+2][2+2]][1];
+        Cub[2+2][i+2][j+2] = Fac[Cub[2+2][i+2][j+2]][1];
+        Cub[i+2][-2+2][j+2] = Fac[Cub[i+2][-2+2][j+2]][1];
+      }
+    }
+    // if we dont care about centers, we can imply their orientation liberally
+    if (!cenfix) {
+      Cub[0+2][1+2][0+2] = 0;
+      Cub[0+2][0+2][-1+2] = 0;
+      Cub[-1+2][0+2][0+2] = 0;
+      Cub[0+2][0+2][1+2] = 0;
+      Cub[1+2][0+2][0+2] = 0;
+      Cub[0+2][-1+2][0+2] = 0;
+    }
+    // solve the cube...
+    t = TopEdges();
+    t += TopCorners();
+    t += MiddleEdges();
+    if (!cubeinit && erval == 0) { erval = 4; }
+    t += BottomEdgesOrient();
+    if (!cubeinit && erval == 0) { erval = 5; }
+    t += BottomEdgesPosition();
+    if (!cubeinit && erval == 0) { erval = 2; }
+    t += BottomCornersPosition();
+    if (!cubeinit && erval == 0) { erval = 6; }
+    t += BottomCornersOrient();
+    if (!cubeinit && erval == 0) { erval = 7; }
+    t += CentersRotate();
+    if (!cubeinit && erval == 0) { erval = 3; }
+    // errors above:
+    // 2-nondescript parity, 3-center orientation, 4-backward centers or corners,
+    // 5-edge flip parity, 6-edge swap parity, 7-corner rotation parity
+    if (shorten) {
+      mov[0] = -1; t = Concise(p + t); mov[0] = 0;
+    }
+    t = Efficient(t);
+    numMoves = t.length() / 3;
+    solution = t;
+    printf("The moves for orientation %d is %d.\n", numOrientation, numMoves);
 }

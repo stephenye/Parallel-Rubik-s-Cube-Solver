@@ -1729,70 +1729,12 @@ const int Cubex::SolveCube()
   */
   // try to solve the cube from each possible starting orientation (to find the fastest solution)...	
   for (int q = 1; q <= 24; q++) {
-    CubeOrientation *co = new CubeOrientation;
-    co->InitOrientation(Cub, q);
-    // buffer old cube
-    for (int i = -2; i <= 2; i++) {
-      for (int j = -2; j <= 2; j++) {
-        for (int k = -2; k <= 2; k++) {
-          Rub[i+2][j+2][k+2] = Cub[i+2][j+2][k+2];
-        }
-      }
-    }
-    // interpolate so that centers are in order...
-    Fac[0][0] = 0;
-    Fac[1][0] = Cub[0+2][2+2][0+2]; Fac[2][0] = Cub[0+2][0+2][-2+2];
-    Fac[3][0] = Cub[-2+2][0+2][0+2]; Fac[4][0] = Cub[0+2][0+2][2+2];
-    Fac[5][0] = Cub[2+2][0+2][0+2]; Fac[6][0] = Cub[0+2][-2+2][0+2];
-    for (int i = 0; i <= 6; i++) {
-      Fac[Fac[i][0]][1] = i;
-    }
-    // apply interpolation
-    for (int i = -1; i <= 1; i++) {
-      for (int j = -1; j <= 1; j++) {
-        Cub[i+2][2+2][j+2] = Fac[Cub[i+2][2+2][j+2]][1];
-        Cub[i+2][j+2][-2+2] = Fac[Cub[i+2][j+2][-2+2]][1];
-        Cub[-2+2][i+2][j+2] = Fac[Cub[-2+2][i+2][j+2]][1];
-        Cub[i+2][j+2][2+2] = Fac[Cub[i+2][j+2][2+2]][1];
-        Cub[2+2][i+2][j+2] = Fac[Cub[2+2][i+2][j+2]][1];
-        Cub[i+2][-2+2][j+2] = Fac[Cub[i+2][-2+2][j+2]][1];
-      }
-    }
-    // if we dont care about centers, we can imply their orientation liberally
-    if (!cenfix) {
-      Cub[0+2][1+2][0+2] = 0;
-      Cub[0+2][0+2][-1+2] = 0;
-      Cub[-1+2][0+2][0+2] = 0;
-      Cub[0+2][0+2][1+2] = 0;
-      Cub[1+2][0+2][0+2] = 0;
-      Cub[0+2][-1+2][0+2] = 0;
-    }
-    // solve the cube...
-    t = TopEdges();
-    t += TopCorners();
-    t += MiddleEdges();
-    if (!cubeinit && erval == 0) { erval = 4; }
-    t += BottomEdgesOrient();
-    if (!cubeinit && erval == 0) { erval = 5; }
-    t += BottomEdgesPosition();
-    if (!cubeinit && erval == 0) { erval = 2; }
-    t += BottomCornersPosition();
-    if (!cubeinit && erval == 0) { erval = 6; }
-    t += BottomCornersOrient();
-    if (!cubeinit && erval == 0) { erval = 7; }
-    t += CentersRotate();
-    if (!cubeinit && erval == 0) { erval = 3; }
-    // errors above:
-    // 2-nondescript parity, 3-center orientation, 4-backward centers or corners,
-    // 5-edge flip parity, 6-edge swap parity, 7-corner rotation parity
-    if (shorten) {
-      mov[0] = -1; t = Concise(p + t); mov[0] = 0;
-    }
-    t = Efficient(t);
-    n = t.length() / 3;
+    CubeOrientation co;
+    co.InitOrientation(Cub, q);
+    co.Solve();
     // if this was shortest solution found so far, run with it...
-    if (n < m || m < 0) {
-      m = n; s = t;
+    if (co.numMoves < m || m < 0) {
+      m = co.numMoves; s = co.solution;
       for (int i = 1; i <= MOV; i++) {
         mvs[i] = mov[i];
       }
@@ -1814,21 +1756,6 @@ const int Cubex::SolveCube()
         }
       }
     }
-    // rotate to next orientation and try again to see if we get a shorter solution
-    if (q % 4 == 0) {
-      p += "CU."; XCU();
-    }
-    else {
-      p += "CL."; XCL();
-    }
-    if (q == 12) {
-      p = "CU.CU.CR."; XCU(); XCU(); XCR();
-    }
-    else if (q == 24) {
-      XCD(); XCD(); XCR();
-    }
-    printf("The moves for orientation %d is %d.\n", q, n);
-    num_moves = num_moves + n;
   }
   //printf("Total moves for 24 orientations is %d.\n", num_moves);
   /*
