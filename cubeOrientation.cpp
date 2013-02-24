@@ -41,14 +41,7 @@ void CubeOrientation::InitOrientation(int inputCube[N+2][N+2][N+2], int q) {
       XCD(); XCD(); XCR();
     }
   }
-  for (int i = -2; i <= 2; i++) {
-    for (int j = -2; j <= 2; j++) {
-      for (int k = -2; k <= 2; k++) {
-	printf("%d", Cub[i+2][j+2][k+2]);
-      }
-    }
-  }
-  printf("\n");
+  cubeinit = true;
 }
 // return true if cube is solved
 const bool CubeOrientation::IsSolved()
