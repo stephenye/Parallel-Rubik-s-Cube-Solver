@@ -15,6 +15,7 @@
 #include <sys/types.h>
 using namespace std;
 #include "cubex.h"
+#include "cubeOrientation.h"
 
 // definition of cube class
 // Cubex constructor & destructor & count
@@ -1728,6 +1729,8 @@ const int Cubex::SolveCube()
   */
   // try to solve the cube from each possible starting orientation (to find the fastest solution)...	
   for (int q = 1; q <= 24; q++) {
+    CubeOrientation *co = new CubeOrientation;
+    co->InitOrientation(Cub, q);
     // buffer old cube
     for (int i = -2; i <= 2; i++) {
       for (int j = -2; j <= 2; j++) {
@@ -1827,7 +1830,7 @@ const int Cubex::SolveCube()
     printf("The moves for orientation %d is %d.\n", q, n);
     num_moves = num_moves + n;
   }
-  printf("Total moves for 24 orientations is %d.\n", num_moves);
+  //printf("Total moves for 24 orientations is %d.\n", num_moves);
   /*
   gettimeofday(&tp, NULL);
   sec = static_cast<double>(tp.tv_sec);
