@@ -13,6 +13,8 @@
 #include <cstdlib>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <pthread.h>
+#include <omp.h>
 using namespace std;
 #include "cubex.h"
 #include "cubeOrientation.h"
@@ -756,53 +758,86 @@ const int Cubex::SolveCube()
   // cube seems to have ok cubelets, so try to solve it...
   for (int i = 1; i <= MOV; i++) mvs[i] = 0;
   int num_moves = 0;
-  /*
+  
   struct timeval tp;
   double sec, usec, start, end;
   gettimeofday(&tp, NULL);
   sec = static_cast<double>(tp.tv_sec);
   usec = static_cast<double>(tp.tv_usec) / 1E6;
   start = sec + usec;
-  */
-  // try to solve the cube from each possible starting orientation (to find the fastest solution)...	
+  
+  omp_set_dynamic(0);
+  omp_set_num_threads(8);
+  // try to solve the cube from each possile starting orientation (to find the fastest solution)...	
+  #pragma omp parallel for
   for (int q = 1; q <= 24; q++) {
     CubeOrientation co;
     co.InitOrientation(Cub, q);
-    co.Solve();
+    co.PreSolve();
+    // solve the cube...
+    string t = "";
+    t = co.TopEdges();
+    if (m > 0 && m < t.length() / 3) {
+	continue;
+    }
+    t += co.TopCorners();
+    if (m > 0 && m < t.length() / 3) {
+	continue;
+    }
+    t += co.MiddleEdges();
+    if (m > 0 && m < t.length() / 3) {
+	continue;
+    }
+    if (!cubeinit && erval == 0) { erval = 4; }
+    t += co.BottomEdgesOrient();
+    if (m > 0 && m < t.length() / 3) {
+	continue;
+    }
+    if (!cubeinit && erval == 0) { erval = 5; }
+    t += co.BottomEdgesPosition();
+    if (m > 0 && m < t.length() / 3) {
+	continue;
+    }
+    if (!cubeinit && erval == 0) { erval = 2; }
+    t += co.BottomCornersPosition();
+    if (m > 0 && m < t.length() / 3) {
+	continue;
+    }
+    if (!cubeinit && erval == 0) { erval = 6; }
+    t += co.BottomCornersOrient();
+    if (m > 0 && m < t.length() / 3) {
+	continue;
+    }
+    if (!cubeinit && erval == 0) { erval = 7; }
+    t += co.CentersRotate();
+    if (!cubeinit && erval == 0) { erval = 3; }
+    // errors above:
+    // 2-nondescript parity, 3-center orientation, 4-backward centers or corners,
+    // 5-edge flip parity, 6-edge swap parity, 7-corner rotation parity
+    if (shorten) {
+      mov[0] = -1; t = co.Concise(p + t); mov[0] = 0;
+    }
+    t = co.Efficient(t);
+    co.numMoves = t.length() / 3;
+    co.solution = t;
+    printf("The moves for orientation %d is %d.\n", co.numOrientation, co.numMoves);
     // if this was shortest solution found so far, run with it...
     if (co.numMoves < m || m < 0) {
       m = co.numMoves; s = co.solution;
       for (int i = 1; i <= MOV; i++) {
         mvs[i] = mov[i];
       }
-      // if we dont care about centers, apply the implied orientations
-      if (!cenfix) {
-        Rub[0+2][1+2][0+2] = (4 - Cub[0+2][1+2][0+2]) % 4;
-        Rub[0+2][0+2][-1+2] = (4 - Cub[0+2][0+2][-1+2]) % 4;
-        Rub[-1+2][0+2][0+2] = (4 - Cub[-1+2][0+2][0+2]) % 4;
-        Rub[0+2][0+2][1+2] = (4 - Cub[0+2][0+2][1+2]) % 4;
-        Rub[1+2][0+2][0+2] = (4 - Cub[1+2][0+2][0+2]) % 4;
-        Rub[0+2][-1+2][0+2] = (4 - Cub[0+2][-1+2][0+2]) % 4;
-      }
-    }
-    // restore old (pre-interpolated) cube
-    for (int i = -2; i <= 2; i++) {
-      for (int j = -2; j <= 2; j++) {
-        for (int k = -2; k <= 2; k++) {
-          Cub[i+2][j+2][k+2] = Rub[i+2][j+2][k+2];
-        }
-      }
     }
   }
   //printf("Total moves for 24 orientations is %d.\n", num_moves);
-  /*
+  
   gettimeofday(&tp, NULL);
   sec = static_cast<double>(tp.tv_sec);
   usec = static_cast<double>(tp.tv_usec) / 1E6;
   end = sec + usec;
   double time = end - start;
   printf("The elapsed clock cycles are: %f.\n", time);
-  */
+  
   // set mov array...
   for (int i = 1; i <= MOV; i++) {
     mov[i] = mvs[i];

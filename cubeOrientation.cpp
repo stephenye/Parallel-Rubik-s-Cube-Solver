@@ -1465,10 +1465,9 @@ const string CubeOrientation::CentersRotate()
   mov[8] = s.length() / 3;
   return s;
 }
-void CubeOrientation::Solve()
+void CubeOrientation::PreSolve()
 {
     int Fac[7][2];
-    string t = "";
     // interpolate so that centers are in order...
     Fac[0][0] = 0;
     Fac[1][0] = Cub[0+2][2+2][0+2]; Fac[2][0] = Cub[0+2][0+2][-2+2];
@@ -1497,29 +1496,6 @@ void CubeOrientation::Solve()
       Cub[1+2][0+2][0+2] = 0;
       Cub[0+2][-1+2][0+2] = 0;
     }
-    // solve the cube...
-    t = TopEdges();
-    t += TopCorners();
-    t += MiddleEdges();
-    if (!cubeinit && erval == 0) { erval = 4; }
-    t += BottomEdgesOrient();
-    if (!cubeinit && erval == 0) { erval = 5; }
-    t += BottomEdgesPosition();
-    if (!cubeinit && erval == 0) { erval = 2; }
-    t += BottomCornersPosition();
-    if (!cubeinit && erval == 0) { erval = 6; }
-    t += BottomCornersOrient();
-    if (!cubeinit && erval == 0) { erval = 7; }
-    t += CentersRotate();
-    if (!cubeinit && erval == 0) { erval = 3; }
-    // errors above:
-    // 2-nondescript parity, 3-center orientation, 4-backward centers or corners,
-    // 5-edge flip parity, 6-edge swap parity, 7-corner rotation parity
-    if (shorten) {
-      mov[0] = -1; t = Concise(p + t); mov[0] = 0;
-    }
-    t = Efficient(t);
-    numMoves = t.length() / 3;
-    solution = t;
-    printf("The moves for orientation %d is %d.\n", numOrientation, numMoves);
 }
+
+

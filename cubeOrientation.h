@@ -70,9 +70,7 @@ public:
   int fz;
   int mov[MOV+1];
   void InitOrientation(int inputCube[N+2][N+2][N+2], int q);
-  void Solve();
-protected:
-private:
+  void PreSolve();
   const string TopEdges();
   const string TopCorners();
   const string MiddleEdges();
@@ -81,6 +79,8 @@ private:
   const string BottomCornersPosition();
   const string BottomCornersOrient();
   const string CentersRotate();
+protected:
+private:
   int Tmp[N+2][N+2][N+2];
 };
 
