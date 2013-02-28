@@ -1,8 +1,8 @@
 # Makefile for cubex by Eric
 CC=g++
 LINK=g++
-CFLAGS=-O2
-LFLAGS=
+CFLAGS=-O2 -fopenmp
+LFLAGS= -lgomp
 INCLUDES=
 OBJS=cubeOrientation.o cubex.o main.o
 RM=/bin/rm -f
