@@ -823,7 +823,10 @@ const int Cubex::SolveCube()
     printf("The moves for orientation %d is %d.\n", co.numOrientation, co.numMoves);
     // if this was shortest solution found so far, run with it...
     if (co.numMoves < m || m < 0) {
-      m = co.numMoves; s = co.solution;
+      #pragma omp critical 
+      {
+        m = co.numMoves; s = co.solution;
+      }
       for (int i = 1; i <= MOV; i++) {
         mvs[i] = mov[i];
       }
