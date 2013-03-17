@@ -1,4 +1,4 @@
-/*
+/*  
  * cubex.cpp
  * Cubex .505 by Eric Dietz (c) 2003 (26 Dec 03, 21 Jan 05) % 0
  * Cube Puzzle and Universal Solver.
@@ -18,6 +18,7 @@
 using namespace std;
 #include "cubex.h"
 #include "cubeOrientation.h"
+ 
 
 // definition of cube class
 // Cubex constructor & destructor & count
@@ -36,6 +37,8 @@ Cubex::~Cubex()
   numcubes--;
 }
 int Cubex::numcubes = 0;
+int Cubex::threadIndex = 0;
+int Cubex::orientationIndex = 0;
 // version & author of the solver
 const char* Cubex::ver = ".505";
 const char* Cubex::author = "Eric Dietz (root@wrongway.org)";
@@ -193,9 +196,13 @@ const bool Cubex::IsSolved()
   return n;
 }
 // create default (solved) cube model and put it in Cub[]
+// HEARHEAR
 const void Cubex::ResetCube()
 {
   solution = "";
+  threadIndex = 0;
+  orientationIndex = 0;
+  
   for (int i = 0; i <= MOV; i++) mov[i] = 0;
   for (int i = 0; i <= N+1; i++) {
     for (int j = 0; j <= N+1; j++) {
@@ -217,6 +224,7 @@ const void Cubex::ResetCube()
   }
   cubeinit = true;
   erval = 0;
+ 
 }
 // this is the series of cube rotation functions
 // copy cube model so we can change it and remember the original
@@ -688,6 +696,8 @@ const int Cubex::FindCorn(int a, int b, int c)
   }
   return f;
 }
+
+// HEARHEAR
 // solve the cube (uses many other routines also)
 // slightly complicated...
 const int Cubex::SolveCube()
@@ -695,8 +705,13 @@ const int Cubex::SolveCube()
   // make sure cube was initialized
   if (!cubeinit) return 1;
   // set up buffers and counters and such...
-  int Rub[5][5][5], Fac[7][2], mvs[MOV+1], m = -1, n;
-  string s = ""; string t = ""; string p = "";
+  int Rub[5][5][5], Fac[7][2];
+//    int n;
+  for (int mvsn=0 ; mvsn <= MOV ; mvsn++){
+    mvs[mvsn] = 0;
+  }
+  sl = "";
+  m = -1;
   // make sure that the cube has the proper cubelets...
   cubeinit = false;
   // check that all the centers are present
@@ -765,88 +780,168 @@ const int Cubex::SolveCube()
   sec = static_cast<double>(tp.tv_sec);
   usec = static_cast<double>(tp.tv_usec) / 1E6;
   start = sec + usec;
-  
+
+  // try to solve the cube from each possile starting orientation (to find the fastest solution)...
+
+  //code for openMP
+/*
   omp_set_dynamic(0);
-  omp_set_num_threads(8);
-  // try to solve the cube from each possile starting orientation (to find the fastest solution)...	
+  omp_set_num_threads(12);
+	
   #pragma omp parallel for
-  for (int q = 1; q <= 24; q++) {
-    CubeOrientation co;
-    co.InitOrientation(Cub, q);
-    co.PreSolve();
-    // solve the cube...
-    string t = "";
-    t = co.TopEdges();
-    if (m > 0 && m < t.length() / 3) {
-	continue;
+*/
+  //for (int q = 1; q <= 24; q++) {
+
+  //code for pthreads // HEARHEAR
+
+  pthread_mutex_init(&mutexSolve, NULL);
+
+  for (int th = 0; th < NUM_THREADS; th++) {
+  
+    bool rc;
+    rc = startThread();   //p_create
+    if (!rc){
+      printf("ERROR; return code from pthread_create() is FALSE\n");
+     pthread_exit(NULL);
     }
-    t += co.TopCorners();
-    if (m > 0 && m < t.length() / 3) {
-	continue;
-    }
-    t += co.MiddleEdges();
-    if (m > 0 && m < t.length() / 3) {
-	continue;
-    }
-    if (!cubeinit && erval == 0) { erval = 4; }
-    t += co.BottomEdgesOrient();
-    if (m > 0 && m < t.length() / 3) {
-	continue;
-    }
-    if (!cubeinit && erval == 0) { erval = 5; }
-    t += co.BottomEdgesPosition();
-    if (m > 0 && m < t.length() / 3) {
-	continue;
-    }
-    if (!cubeinit && erval == 0) { erval = 2; }
-    t += co.BottomCornersPosition();
-    if (m > 0 && m < t.length() / 3) {
-	continue;
-    }
-    if (!cubeinit && erval == 0) { erval = 6; }
-    t += co.BottomCornersOrient();
-    if (m > 0 && m < t.length() / 3) {
-	continue;
-    }
-    if (!cubeinit && erval == 0) { erval = 7; }
-    t += co.CentersRotate();
-    if (!cubeinit && erval == 0) { erval = 3; }
-    // errors above:
-    // 2-nondescript parity, 3-center orientation, 4-backward centers or corners,
-    // 5-edge flip parity, 6-edge swap parity, 7-corner rotation parity
-    if (shorten) {
-      mov[0] = -1; t = co.Concise(p + t); mov[0] = 0;
-    }
-    t = co.Efficient(t);
-    co.numMoves = t.length() / 3;
-    co.solution = t;
-    printf("The moves for orientation %d is %d.\n", co.numOrientation, co.numMoves);
-    // if this was shortest solution found so far, run with it...
-    if (co.numMoves < m || m < 0) {
-      m = co.numMoves; s = co.solution;
-      for (int i = 1; i <= MOV; i++) {
-        mvs[i] = mov[i];
-      }
-    }
+  
+/*
+//HERE IS THE REMOVED CODE, BACKUPED IN CUBEX.H
+*/
+
   }
+   
+  for(int nn = 0; nn < NUM_THREADS ; nn++){
+    waitToExit(nn);    //p_join
+  }
+
   //printf("Total moves for 24 orientations is %d.\n", num_moves);
   
+  pthread_mutex_destroy(&mutexSolve);
+
+
+  //print out solving time
   gettimeofday(&tp, NULL);
   sec = static_cast<double>(tp.tv_sec);
   usec = static_cast<double>(tp.tv_usec) / 1E6;
   end = sec + usec;
   double time = end - start;
   printf("The elapsed clock cycles are: %f.\n", time);
-  
+ 
   // set mov array...
   for (int i = 1; i <= MOV; i++) {
     mov[i] = mvs[i];
   }
   // return error if one was found
   if (!cubeinit) return erval;
+
   mov[0] = m;
   // set solution and return...
-  solution = s;
+  solution = sl;
   return 0;
+
+  //pthread_exit(NULL); 
 }
 // end of cube class definitions
+
+
+void Cubex::SolveCompare(int orientationIndex)
+{
+    CubeOrientation co;
+    co.InitOrientation(Cub, orientationIndex);
+    co.PreSolve();
+    string t = "";
+    string pp = "";
+
+    //define some local variables 
+    int erval_local;
+    erval_local = erval;
+
+    // solve the cube...
+    t = co.TopEdges();
+    if (m > 0 && m < t.length() / 3) {
+	return;
+    }
+    t += co.TopCorners();
+    if (m > 0 && m < t.length() / 3) {
+	return;
+    }
+    t += co.MiddleEdges();
+    if (m > 0 && m < t.length() / 3) {
+	return;
+    }
+    if (!cubeinit && erval_local == 0) { erval_local = 4; }
+    t += co.BottomEdgesOrient();
+    if (m > 0 && m < t.length() / 3) {
+	return;
+    }
+    if (!cubeinit && erval_local == 0) { erval_local = 5; }
+    t += co.BottomEdgesPosition();
+    if (m > 0 && m < t.length() / 3) {
+	return;
+    }
+    if (!cubeinit && erval_local == 0) { erval_local = 2; }
+    t += co.BottomCornersPosition();
+    if (m > 0 && m < t.length() / 3) {
+	return;
+    }
+    if (!cubeinit && erval_local == 0) { erval_local = 6; }
+    t += co.BottomCornersOrient();
+    if (m > 0 && m < t.length() / 3) {
+	return; 
+    }
+    if (!cubeinit && erval_local == 0) { erval_local = 7; }
+    t += co.CentersRotate();
+    if (!cubeinit && erval_local == 0) { erval_local = 3; }
+    // errors above:
+    // 2-nondescript parimvsty, 3-center orientation, 4-backward centers or corners,
+    // 5-edge flip parity, 6-edge swap parity, 7-corner rotation parity
+
+/*
+    if (shorten) {
+      mov[0] = -1; t = co.Concise(pp + t); mov[0] = 0;
+    }
+    t = co.Efficient(t);
+*/
+    co.numMoves = t.length() / 3;
+    co.solution = t;
+
+    pthread_mutex_lock (&mutexSolve);
+    if (m > 0 && m <= t.length() / 3) {
+	pthread_mutex_unlock (&mutexSolve);
+        return; 
+    }
+    else{	
+    // if this IS shortest solution found so far, run with it...
+      erval = erval_local;
+      if (co.numMoves < m || m < 0) {
+        m = co.numMoves; sl = co.solution;
+        for (int i = 1; i <= MOV; i++) {
+          mvs[i] = mov[i];
+        }
+      }
+    }
+   
+    pthread_mutex_unlock (&mutexSolve);
+    printf("The moves for orientation %d is %d.\n", co.numOrientation, co.numMoves);
+    return ;
+    //pthread_exit((void*) 0);
+}
+
+bool Cubex::startThread(){
+  return(pthread_create ( &threads[threadIndex++],NULL, threadEntryFunction, this) == 0);
+//  pthread_exit(NULL);
+}
+
+void * Cubex::threadEntryFunction(void * This){
+  for(int n=0;n<24/NUM_THREADS;n++){
+    ((Cubex *)This)->SolveCompare (orientationIndex++);
+//printf("n is %d\t, orientationIndex is : %d\n",n,orientationIndex);
+
+  }
+  return NULL;
+}
+
+void Cubex::waitToExit(int nn){
+    (void) pthread_join(threads[nn],NULL);
+}
