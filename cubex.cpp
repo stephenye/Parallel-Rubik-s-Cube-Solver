@@ -695,8 +695,10 @@ const int Cubex::SolveCube()
   // make sure cube was initialized
   if (!cubeinit) return 1;
   // set up buffers and counters and such...
-  int Rub[5][5][5], Fac[7][2], mvs[MOV+1], m = -1, n;
-  string s = ""; string t = ""; string p = "";
+  int Rub[5][5][5], Fac[7][2], mvs[MOV+1], n;
+  static int m = -1;
+  static string s = ""; 
+  string t = ""; string p = "";
   // make sure that the cube has the proper cubelets...
   cubeinit = false;
   // check that all the centers are present
@@ -823,10 +825,10 @@ const int Cubex::SolveCube()
     printf("The moves for orientation %d is %d.\n", co.numOrientation, co.numMoves);
     // if this was shortest solution found so far, run with it...
     if (co.numMoves < m || m < 0) {
-      #pragma omp critical 
-      {
-        m = co.numMoves; s = co.solution;
+      __transaction_atomic{
+        m = co.numMoves;
       }
+       s = co.solution;
       for (int i = 1; i <= MOV; i++) {
         mvs[i] = mov[i];
       }
